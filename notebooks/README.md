@@ -59,13 +59,26 @@ databricks configure
 
 ## SQL commands
 
+-- cicd req:
+
 CREATE CATALOG dev_catalog;
 CREATE CATALOG stg_catalog;
 CREATE CATALOG prod_catalog;
 
+-- DEV
 CREATE SCHEMA dev_catalog.bronze;
 CREATE SCHEMA dev_catalog.silver;
 CREATE SCHEMA dev_catalog.gold;
+
+-- STAGING
+CREATE SCHEMA stg_catalog.bronze;
+CREATE SCHEMA stg_catalog.silver;
+CREATE SCHEMA stg_catalog.gold;
+
+-- PROD
+CREATE SCHEMA prod_catalog.bronze;
+CREATE SCHEMA prod_catalog.silver;
+CREATE SCHEMA prod_catalog.gold;
 
 ### 🧪 5. TEST LOCALLY:
 

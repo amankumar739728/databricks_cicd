@@ -4,7 +4,7 @@ bundle:
 targets:
   dev:
     workspace:
-      host: https://adb-xxxx.cloud.databricks.com
+      host: https://dbc-ccb24871-81f0.cloud.databricks.com
     resources:
       pipelines:
         dlt_pipeline:
@@ -18,7 +18,7 @@ targets:
 
   stg:
     workspace:
-      host: https://adb-xxxx.cloud.databricks.com
+      host: https://dbc-ccb24871-81f0.cloud.databricks.com
     resources:
       pipelines:
         dlt_pipeline:
@@ -32,7 +32,7 @@ targets:
 
   prod:
     workspace:
-      host: https://adb-xxxx.cloud.databricks.com
+      host: https://dbc-ccb24871-81f0.cloud.databricks.com
     resources:
       pipelines:
         dlt_pipeline:
