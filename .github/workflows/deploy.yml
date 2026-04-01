@@ -1,0 +1,38 @@
+name: Databricks CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+
+  dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install CLI
+        run: |
+          pip install databricks-cli
+          curl -fsSL https://raw.githubusercontent.com/databricks/cli/main/install.sh | sh
+
+      - name: Deploy Dev
+        run: databricks bundle deploy --target dev
+
+      - name: Run Pipeline
+        run: databricks bundle run dlt_pipeline --target dev
+
+  stg:
+    needs: dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: databricks bundle deploy --target stg
+
+  prod:
+    needs: stg
+    runs-on: ubuntu-latest
+    environment: prod   # ✅ approval step
+    steps:
+      - uses: actions/checkout@v3
+      - run: databricks bundle deploy --target prod

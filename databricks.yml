@@ -1,0 +1,45 @@
+bundle:
+  name: dlt-pipeline-project
+
+targets:
+  dev:
+    workspace:
+      host: https://adb-xxxx.cloud.databricks.com
+    resources:
+      pipelines:
+        dlt_pipeline:
+          name: dlt_dev
+          catalog: dev_catalog
+          target: bronze
+          libraries:
+            - notebook: { path: notebooks/bronze.py }
+            - notebook: { path: notebooks/silver.py }
+            - notebook: { path: notebooks/gold.py }
+
+  stg:
+    workspace:
+      host: https://adb-xxxx.cloud.databricks.com
+    resources:
+      pipelines:
+        dlt_pipeline:
+          name: dlt_stg
+          catalog: stg_catalog
+          target: bronze
+          libraries:
+            - notebook: { path: notebooks/bronze.py }
+            - notebook: { path: notebooks/silver.py }
+            - notebook: { path: notebooks/gold.py }
+
+  prod:
+    workspace:
+      host: https://adb-xxxx.cloud.databricks.com
+    resources:
+      pipelines:
+        dlt_pipeline:
+          name: dlt_prod
+          catalog: prod_catalog
+          target: bronze
+          libraries:
+            - notebook: { path: notebooks/bronze.py }
+            - notebook: { path: notebooks/silver.py }
+            - notebook: { path: notebooks/gold.py }
