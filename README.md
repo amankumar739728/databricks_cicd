@@ -123,3 +123,25 @@ Rollback (if needed)
 ### Final Implementation Overview
 
 “We implemented a CI/CD pipeline using Databricks Asset Bundles and GitHub Actions. The pipeline deploys DLT pipelines across dev, staging, and production using Unity Catalog. Data quality is enforced using DLT expectations, production deployments require manual approval, monitoring is done via pipeline events, and rollback is handled using Git versioning.”
+
+
+#steps to configure token in pipeline for Databricks Asset Bundles (DAB)
+# 1. How to get the token from Databricks
+
+# Go to Databricks workspace → top right avatar → Settings
+# Click Developer → Access Tokens
+# Click Generate New Token
+# Give it a name (e.g., github-cicd) and set expiry
+# Copy the token (shown only once)
+
+
+# 2. How to store it in GitHub
+
+# Go to your repo: amankumar739728/databricks_cicd
+# Settings → Secrets and variables → Actions
+# Click New repository secret
+# Name it: DATABRICKS_TOKEN (or anything you want)
+# Paste the token value
+# 
+# Then in your deploy.yml reference it as:
+#         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
