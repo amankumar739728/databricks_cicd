@@ -38,6 +38,71 @@
   
 
 
+# name: Databricks CI/CD
+
+# on:
+#   push:
+#     branches: [main]
+
+# env:
+#   DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
+#   DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}  # set this in GitHub secrets
+
+# jobs:
+#   dev:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
+
+#       - name: Install Databricks CLI
+#         run: pip install databricks-sdk databricks-cli
+
+#       - name: Deploy to Dev
+#         run: databricks bundle deploy --target dev
+
+#       - name: Run DLT Pipeline in Dev
+#         run: databricks bundle run dlt_pipeline --target dev
+
+#   stg:
+#     needs: dev
+#     runs-on: ubuntu-latest
+#     env:
+#       DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
+#       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+#     steps:
+#       - uses: actions/checkout@v3
+
+#       - name: Install Databricks CLI
+#         run: pip install databricks-sdk databricks-cli
+
+#       - name: Deploy to Staging
+#         run: databricks bundle deploy --target stg
+
+#       - name: Run DLT Pipeline in Staging
+#         run: databricks bundle run dlt_pipeline --target stg
+
+#   prod:
+#     needs: stg
+#     runs-on: ubuntu-latest
+#     environment: prod        # triggers manual approval gate in GitHub
+#     env:
+#       DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
+#       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+#     steps:
+#       - uses: actions/checkout@v3
+
+#       - name: Install Databricks CLI
+#         run: pip install databricks-sdk databricks-cli
+
+#       - name: Deploy to Production
+#         run: databricks bundle deploy --target prod
+
+#       - name: Run DLT Pipeline in Production
+#         run: databricks bundle run dlt_pipeline --target prod
+
+
+
+
 name: Databricks CI/CD
 
 on:
@@ -46,7 +111,7 @@ on:
 
 env:
   DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
-  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}  # set this in GitHub secrets
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
 jobs:
   dev:
@@ -55,7 +120,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install Databricks CLI
-        run: pip install databricks-sdk databricks-cli
+        uses: databricks/setup-cli@main
 
       - name: Deploy to Dev
         run: databricks bundle deploy --target dev
@@ -66,14 +131,11 @@ jobs:
   stg:
     needs: dev
     runs-on: ubuntu-latest
-    env:
-      DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Databricks CLI
-        run: pip install databricks-sdk databricks-cli
+        uses: databricks/setup-cli@main
 
       - name: Deploy to Staging
         run: databricks bundle deploy --target stg
@@ -84,15 +146,12 @@ jobs:
   prod:
     needs: stg
     runs-on: ubuntu-latest
-    environment: prod        # triggers manual approval gate in GitHub
-    env:
-      DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    environment: prod
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Databricks CLI
-        run: pip install databricks-sdk databricks-cli
+        uses: databricks/setup-cli@main
 
       - name: Deploy to Production
         run: databricks bundle deploy --target prod
