@@ -59,6 +59,7 @@ targets:
           catalog: dev_catalog
           schema: dev_schema
           serverless: true
+          allow_duplicate_names: true
           configuration:
             input_path: /Volumes/dev_catalog/dev_schema/data/
           libraries:
@@ -79,6 +80,7 @@ targets:
           catalog: stg_catalog
           schema: stg_schema
           serverless: true
+          allow_duplicate_names: true
           configuration:
             input_path: /Volumes/stg_catalog/stg_schema/data/
           libraries:
@@ -99,6 +101,7 @@ targets:
           catalog: prod_catalog
           schema: prod_schema
           serverless: true
+          allow_duplicate_names: true
           configuration:
             input_path: /Volumes/prod_catalog/prod_schema/data/
           libraries:

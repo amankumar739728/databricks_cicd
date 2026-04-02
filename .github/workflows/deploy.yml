@@ -153,10 +153,11 @@ jobs:
       - name: Deploy to Staging
         run: databricks bundle deploy --target stg --force-lock
 
+      # stg job - change dlt_dev to dlt_stg
       - name: Stop any active pipeline run
         run: |
           databricks pipelines stop $(databricks pipelines list-updates \
-            --pipeline-id $(databricks pipelines get-by-name dlt_dev \
+            --pipeline-id $(databricks pipelines get-by-name dlt_stg \
             --output json | jq -r '.pipeline_id') \
             --output json | jq -r '.updates[0].update_id') || true
 
@@ -176,10 +177,11 @@ jobs:
       - name: Deploy to Production
         run: databricks bundle deploy --target prod --force-lock
 
+      # prod job - change dlt_dev to dlt_prod  
       - name: Stop any active pipeline run
         run: |
           databricks pipelines stop $(databricks pipelines list-updates \
-            --pipeline-id $(databricks pipelines get-by-name dlt_dev \
+            --pipeline-id $(databricks pipelines get-by-name dlt_prod \
             --output json | jq -r '.pipeline_id') \
             --output json | jq -r '.updates[0].update_id') || true
 
