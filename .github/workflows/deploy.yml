@@ -108,7 +108,7 @@ name: Databricks CI/CD
 on:
   push:
     branches: [main]
-  workflow_dispatch:        # allows manual trigger from GitHub UI
+  workflow_dispatch:
     inputs:
       reason:
         description: 'Reason for manual trigger'
@@ -143,16 +143,54 @@ jobs:
         run: databricks bundle run dlt_pipeline --target dev
 
       - name: Sync data files from dev to stg and prod volumes
+        continue-on-error: true
         run: |
-          databricks fs cp \
-            "dbfs:/Volumes/dev_catalog/dev_schema/data/" \
-            "dbfs:/Volumes/stg_catalog/stg_schema/data/" \
-            --recursive --overwrite || true
+          python3 - << 'PYTHON'
+          import subprocess
+          import json
+          import sys
 
-          databricks fs cp \
-            "dbfs:/Volumes/dev_catalog/dev_schema/data/" \
-            "dbfs:/Volumes/prod_catalog/prod_schema/data/" \
-            --recursive --overwrite || true
+          def run_cmd(cmd):
+              result = subprocess.run(cmd, capture_output=True, text=True)
+              if result.returncode != 0:
+                  print(f"Warning: {result.stderr}")
+              return result.stdout
+
+          # List files in dev volume
+          output = run_cmd([
+              "databricks", "fs", "ls",
+              "dbfs:/Volumes/dev_catalog/dev_schema/data/",
+              "--output", "json"
+          ])
+
+          if not output.strip():
+              print("No files found in dev volume")
+              sys.exit(0)
+
+          files = json.loads(output)
+          print(f"Found {len(files)} files to sync")
+
+          targets = [
+              "dbfs:/Volumes/stg_catalog/stg_schema/data/",
+              "dbfs:/Volumes/prod_catalog/prod_schema/data/"
+          ]
+
+          for f in files:
+              filename = f["path"].split("/")[-1]
+              src = f"dbfs:/Volumes/dev_catalog/dev_schema/data/{filename}"
+
+              for target in targets:
+                  dest = f"{target}{filename}"
+                  print(f"Copying {filename} to {target}...")
+                  run_cmd([
+                      "databricks", "fs", "cp",
+                      src, dest,
+                      "--overwrite"
+                  ])
+                  print(f"✓ Synced {filename} to {target}")
+
+          print("Sync completed!")
+          PYTHON
 
       - name: Wait before next environment
         run: sleep 60
