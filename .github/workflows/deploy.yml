@@ -136,10 +136,10 @@ jobs:
 
       - name: Stop any active dev pipeline run
         run: |
-          databricks pipelines stop $(databricks pipelines list-updates \
-            --pipeline-id $(databricks pipelines get-by-name dlt_dev \
-            --output json | jq -r '.pipeline_id') \
-            --output json | jq -r '.updates[0].update_id') || true
+          PIPELINE_ID=$(databricks pipelines list-pipelines --output json | \
+            jq -r '.[] | select(.name=="dlt_dev") | .pipeline_id')
+          echo "Pipeline ID: $PIPELINE_ID"
+          databricks pipelines stop $PIPELINE_ID || true
 
       - name: Run DLT Pipeline in Dev
         run: databricks bundle run dlt_pipeline --target dev
@@ -176,7 +176,7 @@ jobs:
           echo "Sync job submitted with run_id: $RUN_ID"
 
       - name: Wait before next environment
-        run: sleep 120
+        run: sleep 60
 
   stg:
     needs: dev
@@ -192,16 +192,16 @@ jobs:
 
       - name: Stop any active stg pipeline run
         run: |
-          databricks pipelines stop $(databricks pipelines list-updates \
-            --pipeline-id $(databricks pipelines get-by-name dlt_stg \
-            --output json | jq -r '.pipeline_id') \
-            --output json | jq -r '.updates[0].update_id') || true
+          PIPELINE_ID=$(databricks pipelines list-pipelines --output json | \
+            jq -r '.[] | select(.name=="dlt_stg") | .pipeline_id')
+          echo "Pipeline ID: $PIPELINE_ID"
+          databricks pipelines stop $PIPELINE_ID || true
 
       - name: Run DLT Pipeline in Staging
         run: databricks bundle run dlt_pipeline --target stg
 
       - name: Wait before next environment
-        run: sleep 120
+        run: sleep 60
 
   prod:
     needs: stg
@@ -218,10 +218,10 @@ jobs:
 
       - name: Stop any active prod pipeline run
         run: |
-          databricks pipelines stop $(databricks pipelines list-updates \
-            --pipeline-id $(databricks pipelines get-by-name dlt_prod \
-            --output json | jq -r '.pipeline_id') \
-            --output json | jq -r '.updates[0].update_id') || true
+          PIPELINE_ID=$(databricks pipelines list-pipelines --output json | \
+            jq -r '.[] | select(.name=="dlt_prod") | .pipeline_id')
+          echo "Pipeline ID: $PIPELINE_ID"
+          databricks pipelines stop $PIPELINE_ID || true
 
       - name: Run DLT Pipeline in Production
         run: databricks bundle run dlt_pipeline --target prod
