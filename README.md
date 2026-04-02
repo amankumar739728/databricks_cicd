@@ -195,3 +195,19 @@ env:
    3. Simply push the code to main branch through databricks
    4.go to github repository where the code exist-->Actions-->workflow will be running here if some code changes exist hit the approval button once dev and stg is passed for prod pipeline run -->
 
+
+
+<!-- ### complete flow:
+You upload customers1.csv to dev volume(/Volumes/dev_catalog/dev_schema/data/)
+         ↓
+volume_trigger.yml runs (within 15 mins)
+         ↓
+Detects new file → triggers deploy.yml
+         ↓
+dev pipeline runs → processes both CSVs(copy to stg and prod volume)
+         ↓
+Auto-syncs files to stg + prod volumes
+         ↓
+stg pipeline runs → same data
+         ↓
+prod pipeline runs (after approval) -->

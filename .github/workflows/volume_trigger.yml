@@ -1,0 +1,59 @@
+name: Volume File Trigger
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'    # checks every 15 minutes for new files
+
+env:
+  DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
+  DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+  DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+
+jobs:
+  check-and-trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Check for new files in dev volume
+        id: check_files
+        run: |
+          # List files in dev volume and save count
+          FILE_COUNT=$(databricks fs ls \
+            dbfs:/Volumes/dev_catalog/dev_schema/data/ \
+            --output json | jq length)
+          echo "file_count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+          # Read last known count from GitHub cache
+          LAST_COUNT=$(cat .last_file_count 2>/dev/null || echo "0")
+          echo "last_count=$LAST_COUNT" >> $GITHUB_OUTPUT
+
+          echo "Current files: $FILE_COUNT, Last known: $LAST_COUNT"
+
+          if [ "$FILE_COUNT" -gt "$LAST_COUNT" ]; then
+            echo "new_files=true" >> $GITHUB_OUTPUT
+            echo "New files detected! Triggering pipeline..."
+          else
+            echo "new_files=false" >> $GITHUB_OUTPUT
+            echo "No new files detected."
+          fi
+
+      - name: Save current file count
+        if: steps.check_files.outputs.new_files == 'true'
+        run: |
+          echo "${{ steps.check_files.outputs.file_count }}" > .last_file_count
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .last_file_count
+          git commit -m "chore: update file count tracker" || true
+          git push || true
+
+      - name: Trigger main pipeline if new files found
+        if: steps.check_files.outputs.new_files == 'true'
+        run: |
+          gh workflow run deploy.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

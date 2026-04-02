@@ -108,6 +108,12 @@ name: Databricks CI/CD
 on:
   push:
     branches: [main]
+  workflow_dispatch:        # allows manual trigger from GitHub UI
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual pipeline run'
 
 env:
   DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
@@ -123,24 +129,31 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Verify token is set
-        run: |
-          echo "Token length: ${#DATABRICKS_TOKEN}"
-          databricks auth describe
-
       - name: Deploy to Dev
         run: databricks bundle deploy --target dev --force-lock
-      
-      - name: Stop any active pipeline run
+
+      - name: Stop any active dev pipeline run
         run: |
           databricks pipelines stop $(databricks pipelines list-updates \
             --pipeline-id $(databricks pipelines get-by-name dlt_dev \
             --output json | jq -r '.pipeline_id') \
             --output json | jq -r '.updates[0].update_id') || true
+
       - name: Run DLT Pipeline in Dev
         run: databricks bundle run dlt_pipeline --target dev
-      
-      #Add a wait/delay between pipeline runs to run in sequential manner
+
+      - name: Sync data files from dev to stg and prod volumes
+        run: |
+          databricks fs cp \
+            dbfs:/Volumes/dev_catalog/dev_schema/data/ \
+            dbfs:/Volumes/stg_catalog/stg_schema/data/ \
+            --recursive --overwrite
+
+          databricks fs cp \
+            dbfs:/Volumes/dev_catalog/dev_schema/data/ \
+            dbfs:/Volumes/prod_catalog/prod_schema/data/ \
+            --recursive --overwrite
+
       - name: Wait before next environment
         run: sleep 60
 
@@ -156,8 +169,7 @@ jobs:
       - name: Deploy to Staging
         run: databricks bundle deploy --target stg --force-lock
 
-      # stg job - change dlt_dev to dlt_stg
-      - name: Stop any active pipeline run
+      - name: Stop any active stg pipeline run
         run: |
           databricks pipelines stop $(databricks pipelines list-updates \
             --pipeline-id $(databricks pipelines get-by-name dlt_stg \
@@ -166,7 +178,7 @@ jobs:
 
       - name: Run DLT Pipeline in Staging
         run: databricks bundle run dlt_pipeline --target stg
-      #Add a wait/delay between pipeline runs to run in sequential manner
+
       - name: Wait before next environment
         run: sleep 60
 
@@ -183,8 +195,7 @@ jobs:
       - name: Deploy to Production
         run: databricks bundle deploy --target prod --force-lock
 
-      # prod job - change dlt_dev to dlt_prod  
-      - name: Stop any active pipeline run
+      - name: Stop any active prod pipeline run
         run: |
           databricks pipelines stop $(databricks pipelines list-updates \
             --pipeline-id $(databricks pipelines get-by-name dlt_prod \
