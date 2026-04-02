@@ -130,9 +130,16 @@ jobs:
 
       - name: Deploy to Dev
         run: databricks bundle deploy --target dev --force-lock
+      
+      - name: Stop any active pipeline run
+        run: |
+          databricks pipelines stop $(databricks pipelines list-updates \
+            --pipeline-id $(databricks pipelines get-by-name dlt_dev \
+            --output json | jq -r '.pipeline_id') \
+            --output json | jq -r '.updates[0].update_id') || true
 
       - name: Run DLT Pipeline in Dev
-        run: databricks bundle run dlt_pipeline --target dev
+        run: databricks bundle run dlt_pipeline --target dev --no-wait
 
   stg:
     needs: dev
@@ -146,8 +153,15 @@ jobs:
       - name: Deploy to Staging
         run: databricks bundle deploy --target stg --force-lock
 
+      - name: Stop any active pipeline run
+        run: |
+          databricks pipelines stop $(databricks pipelines list-updates \
+            --pipeline-id $(databricks pipelines get-by-name dlt_dev \
+            --output json | jq -r '.pipeline_id') \
+            --output json | jq -r '.updates[0].update_id') || true
+
       - name: Run DLT Pipeline in Staging
-        run: databricks bundle run dlt_pipeline --target stg
+        run: databricks bundle run dlt_pipeline --target stg --no-wait
 
   prod:
     needs: stg
@@ -162,5 +176,12 @@ jobs:
       - name: Deploy to Production
         run: databricks bundle deploy --target prod --force-lock
 
+      - name: Stop any active pipeline run
+        run: |
+          databricks pipelines stop $(databricks pipelines list-updates \
+            --pipeline-id $(databricks pipelines get-by-name dlt_dev \
+            --output json | jq -r '.pipeline_id') \
+            --output json | jq -r '.updates[0].update_id') || true
+
       - name: Run DLT Pipeline in Production
-        run: databricks bundle run dlt_pipeline --target prod
+        run: databricks bundle run dlt_pipeline --target prod --no-wait
