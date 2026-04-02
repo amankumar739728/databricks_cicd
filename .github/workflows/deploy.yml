@@ -147,7 +147,6 @@ jobs:
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          # Get OAuth token using client credentials
           TOKEN=$(curl -s -X POST \
             "https://dbc-ccb24871-81f0.cloud.databricks.com/oidc/v1/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
@@ -156,7 +155,6 @@ jobs:
 
           echo "Token obtained: ${#TOKEN} chars"
 
-          # Submit sync notebook job via REST API
           RESPONSE=$(curl -s -X POST \
             "$DATABRICKS_HOST/api/2.1/jobs/runs/submit" \
             -H "Authorization: Bearer $TOKEN" \
@@ -168,14 +166,9 @@ jobs:
                 "notebook_task": {
                   "notebook_path": "/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes",
                   "source": "WORKSPACE"
-                },
-                "new_cluster": {
-                  "spark_version": "15.4.x-scala2.12",
-                  "node_type_id": "i3.xlarge",
-                  "num_workers": 1,
-                  "data_security_mode": "SINGLE_USER"
                 }
-              }]
+              }],
+              "serverless": true
             }')
 
           echo "Response: $RESPONSE"
@@ -183,7 +176,7 @@ jobs:
           echo "Sync job submitted with run_id: $RUN_ID"
 
       - name: Wait before next environment
-        run: sleep 60
+        run: sleep 120
 
   stg:
     needs: dev
@@ -208,7 +201,7 @@ jobs:
         run: databricks bundle run dlt_pipeline --target stg
 
       - name: Wait before next environment
-        run: sleep 60
+        run: sleep 120
 
   prod:
     needs: stg
