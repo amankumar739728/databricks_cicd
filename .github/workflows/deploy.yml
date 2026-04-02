@@ -128,7 +128,7 @@ jobs:
           databricks auth describe
 
       - name: Deploy to Dev
-        run: databricks bundle deploy --target dev
+        run: databricks bundle deploy --target dev --force-lock
 
       - name: Run DLT Pipeline in Dev
         run: databricks bundle run dlt_pipeline --target dev
@@ -143,7 +143,7 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: Deploy to Staging
-        run: databricks bundle deploy --target stg
+        run: databricks bundle deploy --target stg --force-lock
 
       - name: Run DLT Pipeline in Staging
         run: databricks bundle run dlt_pipeline --target stg
@@ -159,7 +159,7 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: Deploy to Production
-        run: databricks bundle deploy --target prod
+        run: databricks bundle deploy --target prod --force-lock
 
       - name: Run DLT Pipeline in Production
         run: databricks bundle run dlt_pipeline --target prod
