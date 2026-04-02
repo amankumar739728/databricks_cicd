@@ -144,42 +144,36 @@ jobs:
       - name: Run DLT Pipeline in Dev
         run: databricks bundle run dlt_pipeline --target dev
 
+      - name: Get OAuth Token for REST API
+        id: get_token
+        run: |
+          TOKEN=$(databricks auth token --host $DATABRICKS_HOST 2>/dev/null | grep Token | awk '{print $2}')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          CLUSTER_ID=$(databricks clusters list --output json | jq -r '[.[] | select(.state=="RUNNING")] | .[0].cluster_id // empty')
-
-          if [ -z "$CLUSTER_ID" ]; then
-            echo "No running cluster found, using serverless..."
-            databricks jobs submit \
-              --json '{
-                "run_name": "sync_volumes",
-                "tasks": [{
-                  "task_key": "sync",
-                  "notebook_task": {
-                    "notebook_path": "/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes",
-                    "source": "WORKSPACE"
-                  },
-                  "environment_key": "default",
-                  "serverless": true
-                }]
-              }'
-          else
-            echo "Using cluster: $CLUSTER_ID"
-            databricks jobs submit \
-              --json "{
-                \"run_name\": \"sync_volumes\",
-                \"tasks\": [{
-                  \"task_key\": \"sync\",
-                  \"notebook_task\": {
-                    \"notebook_path\": \"/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes\",
-                    \"source\": \"WORKSPACE\"
-                  },
-                  \"existing_cluster_id\": \"$CLUSTER_ID\"
-                }]
-              }"
-          fi
-          echo "Sync job submitted successfully!"
+          curl -s -X POST \
+            "${{ env.DATABRICKS_HOST }}/api/2.1/jobs/runs/submit" \
+            -H "Authorization: Bearer ${{ steps.get_token.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "run_name": "sync_volumes",
+              "tasks": [{
+                "task_key": "sync",
+                "notebook_task": {
+                  "notebook_path": "/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes",
+                  "source": "WORKSPACE"
+                },
+                "new_cluster": {
+                  "spark_version": "15.4.x-scala2.12",
+                  "node_type_id": "i3.xlarge",
+                  "num_workers": 1,
+                  "data_security_mode": "SINGLE_USER"
+                }
+              }]
+            }' | jq .
+          echo "Sync job submitted!"
 
       - name: Wait before next environment
         run: sleep 60
