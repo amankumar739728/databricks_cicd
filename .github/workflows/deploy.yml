@@ -103,58 +103,68 @@
 
 
 
-name: Databricks CI/CD
+# name: Databricks CI/CD
 
-on:
-  push:
-    branches: [main]
+# on:
+#   push:
+#     branches: [main]
 
-env:
-  DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
-  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+# env:
+#   DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
+#   DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
-jobs:
-  dev:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+# jobs:
+#   dev:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
 
-      - name: Install Databricks CLI
-        uses: databricks/setup-cli@main
+#       - name: Install Databricks CLI
+#         uses: databricks/setup-cli@main
 
-      - name: Deploy to Dev
-        run: databricks bundle deploy --target dev
+#       - name: Deploy to Dev
+#         run: databricks bundle deploy --target dev
 
-      - name: Run DLT Pipeline in Dev
-        run: databricks bundle run dlt_pipeline --target dev
+#       - name: Run DLT Pipeline in Dev
+#         run: databricks bundle run dlt_pipeline --target dev
 
-  stg:
-    needs: dev
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+#   stg:
+#     needs: dev
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
 
-      - name: Install Databricks CLI
-        uses: databricks/setup-cli@main
+#       - name: Install Databricks CLI
+#         uses: databricks/setup-cli@main
 
-      - name: Deploy to Staging
-        run: databricks bundle deploy --target stg
+#       - name: Deploy to Staging
+#         run: databricks bundle deploy --target stg
 
-      - name: Run DLT Pipeline in Staging
-        run: databricks bundle run dlt_pipeline --target stg
+#       - name: Run DLT Pipeline in Staging
+#         run: databricks bundle run dlt_pipeline --target stg
 
-  prod:
-    needs: stg
-    runs-on: ubuntu-latest
-    environment: prod
-    steps:
-      - uses: actions/checkout@v3
+#   prod:
+#     needs: stg
+#     runs-on: ubuntu-latest
+#     environment: prod
+#     steps:
+#       - uses: actions/checkout@v3
 
-      - name: Install Databricks CLI
-        uses: databricks/setup-cli@main
+#       - name: Install Databricks CLI
+#         uses: databricks/setup-cli@main
 
-      - name: Deploy to Production
-        run: databricks bundle deploy --target prod
+#       - name: Deploy to Production
+#         run: databricks bundle deploy --target prod
 
-      - name: Run DLT Pipeline in Production
-        run: databricks bundle run dlt_pipeline --target prod
+#       - name: Run DLT Pipeline in Production
+#         run: databricks bundle run dlt_pipeline --target prod
+
+
+
+- name: Verify token is set
+  run: |
+    echo "Token length: ${#DATABRICKS_TOKEN}"
+    databricks auth describe
+  env:
+    DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
