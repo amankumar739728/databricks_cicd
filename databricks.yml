@@ -52,6 +52,8 @@ targets:
   dev:
     workspace:
       host: https://dbc-ccb24871-81f0.cloud.databricks.com
+    run_as:
+      user_name: aman.kumar@gyansys.com
     resources:
       pipelines:
         dlt_pipeline:
@@ -71,6 +73,8 @@ targets:
   stg:
     workspace:
       host: https://dbc-ccb24871-81f0.cloud.databricks.com
+    run_as:
+      user_name: aman.kumar@gyansys.com
     resources:
       pipelines:
         dlt_pipeline:
@@ -90,6 +94,8 @@ targets:
   prod:
     workspace:
       host: https://dbc-ccb24871-81f0.cloud.databricks.com
+    run_as:
+      user_name: aman.kumar@gyansys.com
     resources:
       pipelines:
         dlt_pipeline:
