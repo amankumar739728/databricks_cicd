@@ -1,3 +1,4 @@
+# Databricks notebook source
 import dlt
 
 @dlt.table(name="customers_gold")

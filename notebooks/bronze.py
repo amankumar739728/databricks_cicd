@@ -1,3 +1,4 @@
+#code for running inside created dlt pipeline as path is hardcoded
 # import dlt
 
 # @dlt.table(name="customers_bronze")
@@ -11,6 +12,7 @@
 
 
 
+# Databricks notebook source
 import dlt
 import os
 
