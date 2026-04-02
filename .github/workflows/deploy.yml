@@ -208,10 +208,6 @@ jobs:
       - name: Run DLT Pipeline in Staging
         run: databricks bundle run dlt_pipeline --target stg
 
-      - name: Run Sync Job in Staging
-        continue-on-error: true
-        run: databricks bundle run sync_job --target stg
-
       - name: Wait before next environment
         run: sleep 60
 
@@ -254,7 +250,3 @@ jobs:
 
       - name: Run DLT Pipeline in Production
         run: databricks bundle run dlt_pipeline --target prod
-
-      - name: Run Sync Job in Production
-        continue-on-error: true
-        run: databricks bundle run sync_job --target prod
