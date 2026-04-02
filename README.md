@@ -57,7 +57,7 @@ databricks configure
 
 ### 🏗️ 4. UNITY CATALOG SETUP:
 
-## SQL commands
+<!-- ## SQL commands
 
 -- cicd req:
 
@@ -78,18 +78,10 @@ CREATE SCHEMA stg_catalog.gold;
 -- PROD
 CREATE SCHEMA prod_catalog.bronze;
 CREATE SCHEMA prod_catalog.silver;
-CREATE SCHEMA prod_catalog.gold;
-
-### 🧪 5. TEST LOCALLY:
-
-## Validation and deployment commands
-
-databricks bundle validate
-databricks bundle deploy --target dev
-databricks bundle run dlt_pipeline --target dev
+CREATE SCHEMA prod_catalog.gold; -->
 
 
-### 🌐 6. PUSH TO GITHUB
+### 🌐 5. PUSH TO GITHUB
 
 ## Command to push the code
 
@@ -120,7 +112,7 @@ Monitoring
    ↓
 Rollback (if needed)
 
-### Final Implementation Overview
+### 6. Final Implementation Overview
 
 “We implemented a CI/CD pipeline using Databricks Asset Bundles and GitHub Actions. The pipeline deploys DLT pipelines across dev, staging, and production using Unity Catalog. Data quality is enforced using DLT expectations, production deployments require manual approval, monitoring is done via pipeline events, and rollback is handled using Git versioning.”
 
@@ -145,3 +137,50 @@ Rollback (if needed)
 # 
 # Then in your deploy.yml reference it as:
 #         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+
+<!-- ALternative(Recommended):
+==>Use OAuth via Service Principal instead of PAT
+Step 1: Create a Service Principal in Databricks
+
+Go to Databricks → Settings → Identity and Access → Service Principals
+Click Add Service Principal
+Name it github-cicd-sp
+Grant it Admin role on the workspace
+
+Step 2: Generate OAuth secret
+
+Click on the service principal
+Go to Secrets tab → Generate secret
+Copy the Client ID and Client Secret
+
+Step 3: Add to GitHub Secrets
+
+DATABRICKS_CLIENT_ID = Client ID
+DATABRICKS_CLIENT_SECRET = Client Secret
+Keep DATABRICKS_HOST as is
+
+Step 4: Update deploy.yml
+env:
+  DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
+  DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+  DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }} -->
+
+
+#Final Working Flow:
+
+<!-- Push to main
+      ↓
+   dev job  ✅
+   ├── Deploy dlt_dev pipeline
+   ├── Run pipeline → 3 tables in dev_catalog.dev_schema
+   └── Wait 60s
+      ↓
+   stg job  ✅
+   ├── Deploy dlt_stg pipeline
+   ├── Run pipeline → 3 tables in stg_catalog.stg_schema
+   └── Wait 60s
+      ↓
+   prod job ✅ (manual approval)
+   ├── Deploy dlt_prod pipeline
+   └── Run pipeline → 3 tables in prod_catalog.prod_schema -->
