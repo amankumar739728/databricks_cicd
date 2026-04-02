@@ -185,7 +185,7 @@ jobs:
           echo "Sync job submitted with run_id: $RUN_ID"
 
       - name: Wait before next environment
-        run: sleep 120
+        run: sleep 60
 
   stg:
     needs: dev
@@ -227,7 +227,7 @@ jobs:
         run: databricks bundle run dlt_pipeline --target stg
 
       - name: Wait before next environment
-        run: sleep 120
+        run: sleep 60
 
   prod:
     needs: stg
