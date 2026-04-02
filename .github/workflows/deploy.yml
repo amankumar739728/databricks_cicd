@@ -109,7 +109,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '.last_file_count'    # ignore commits from volume_trigger.yml
+      - '.last_file_count'
   workflow_dispatch:
     inputs:
       reason:
@@ -147,18 +147,39 @@ jobs:
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          databricks runs submit --wait \
-            --json '{
-              "run_name": "sync_volumes",
-              "tasks": [{
-                "task_key": "sync",
-                "notebook_task": {
-                  "notebook_path": "/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes",
-                  "source": "WORKSPACE"
-                },
-                "existing_cluster_id": "'"$(databricks clusters list --output json | jq -r '.[0].cluster_id')"'"
-              }]
-            }'
+          # Get cluster id
+          CLUSTER_ID=$(databricks clusters list --output json | jq -r '[.[] | select(.state=="RUNNING")] | .[0].cluster_id // empty')
+
+          if [ -z "$CLUSTER_ID" ]; then
+            echo "No running cluster found, using serverless..."
+            databricks jobs submit --wait \
+              --json '{
+                "run_name": "sync_volumes",
+                "tasks": [{
+                  "task_key": "sync",
+                  "notebook_task": {
+                    "notebook_path": "/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes",
+                    "source": "WORKSPACE"
+                  },
+                  "environment_key": "default",
+                  "serverless": true
+                }]
+              }'
+          else
+            echo "Using cluster: $CLUSTER_ID"
+            databricks jobs submit --wait \
+              --json "{
+                \"run_name\": \"sync_volumes\",
+                \"tasks\": [{
+                  \"task_key\": \"sync\",
+                  \"notebook_task\": {
+                    \"notebook_path\": \"/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes\",
+                    \"source\": \"WORKSPACE\"
+                  },
+                  \"existing_cluster_id\": \"$CLUSTER_ID\"
+                }]
+              }"
+          fi
 
       - name: Wait before next environment
         run: sleep 60
