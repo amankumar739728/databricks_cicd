@@ -184,3 +184,14 @@ env:
    prod job ✅ (manual approval)
    ├── Deploy dlt_prod pipeline
    └── Run pipeline → 3 tables in prod_catalog.prod_schema -->
+
+
+
+<!-- #command to run the workflow:
+   1.set the token Settings-->Secrets & Variable-->Actions-->New Repository Secret-->save the value generated from databricks PAT or service principle
+
+   2.Go to databricks--> dab(databricks assets bundle) file or-->click the databricks to open cloned repository--> select source as pipeline,Target as dev,stg or prod from the dropdown-->hit deploy button-->it will create the pipeline and start executing the pipeline 
+   
+   3. Simply push the code to main branch through databricks
+   4.go to github repository where the code exist-->Actions-->workflow will be running here if some code changes exist hit the approval button once dev and stg is passed for prod pipeline run -->
+
