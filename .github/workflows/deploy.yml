@@ -144,18 +144,22 @@ jobs:
       - name: Run DLT Pipeline in Dev
         run: databricks bundle run dlt_pipeline --target dev
 
-      - name: Get OAuth Token for REST API
-        id: get_token
-        run: |
-          TOKEN=$(databricks auth token --host $DATABRICKS_HOST 2>/dev/null | grep Token | awk '{print $2}')
-          echo "token=$TOKEN" >> $GITHUB_OUTPUT
-
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          curl -s -X POST \
-            "${{ env.DATABRICKS_HOST }}/api/2.1/jobs/runs/submit" \
-            -H "Authorization: Bearer ${{ steps.get_token.outputs.token }}" \
+          # Get OAuth token using client credentials
+          TOKEN=$(curl -s -X POST \
+            "https://dbc-ccb24871-81f0.cloud.databricks.com/oidc/v1/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=$DATABRICKS_CLIENT_ID&client_secret=$DATABRICKS_CLIENT_SECRET&scope=all-apis" \
+            | jq -r '.access_token')
+
+          echo "Token obtained: ${#TOKEN} chars"
+
+          # Submit sync notebook job via REST API
+          RESPONSE=$(curl -s -X POST \
+            "$DATABRICKS_HOST/api/2.1/jobs/runs/submit" \
+            -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{
               "run_name": "sync_volumes",
@@ -172,8 +176,11 @@ jobs:
                   "data_security_mode": "SINGLE_USER"
                 }
               }]
-            }' | jq .
-          echo "Sync job submitted!"
+            }')
+
+          echo "Response: $RESPONSE"
+          RUN_ID=$(echo $RESPONSE | jq -r '.run_id')
+          echo "Sync job submitted with run_id: $RUN_ID"
 
       - name: Wait before next environment
         run: sleep 60
