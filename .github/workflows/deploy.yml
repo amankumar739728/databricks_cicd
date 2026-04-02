@@ -137,9 +137,12 @@ jobs:
             --pipeline-id $(databricks pipelines get-by-name dlt_dev \
             --output json | jq -r '.pipeline_id') \
             --output json | jq -r '.updates[0].update_id') || true
-
       - name: Run DLT Pipeline in Dev
-        run: databricks bundle run dlt_pipeline --target dev --no-wait
+        run: databricks bundle run dlt_pipeline --target dev
+      
+      #Add a wait/delay between pipeline runs to run in sequential manner
+      - name: Wait before next environment
+        run: sleep 60
 
   stg:
     needs: dev
@@ -162,7 +165,10 @@ jobs:
             --output json | jq -r '.updates[0].update_id') || true
 
       - name: Run DLT Pipeline in Staging
-        run: databricks bundle run dlt_pipeline --target stg --no-wait
+        run: databricks bundle run dlt_pipeline --target stg
+      #Add a wait/delay between pipeline runs to run in sequential manner
+      - name: Wait before next environment
+        run: sleep 60
 
   prod:
     needs: stg
@@ -186,4 +192,4 @@ jobs:
             --output json | jq -r '.updates[0].update_id') || true
 
       - name: Run DLT Pipeline in Production
-        run: databricks bundle run dlt_pipeline --target prod --no-wait
+        run: databricks bundle run dlt_pipeline --target prod
