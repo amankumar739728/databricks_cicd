@@ -61,9 +61,12 @@ targets:
           configuration:
             input_path: /Volumes/dev_catalog/dev_schema/data/Customers.csv
           libraries:
-            - notebook: { path: notebooks/bronze.py }
-            - notebook: { path: notebooks/silver.py }
-            - notebook: { path: notebooks/gold.py }
+            - file:
+                path: ./notebooks/bronze.py
+            - file:
+                path: ./notebooks/silver.py
+            - file:
+                path: ./notebooks/gold.py
 
   stg:
     workspace:
@@ -77,9 +80,12 @@ targets:
           configuration:
             input_path: /Volumes/stg_catalog/stg_schema/data/Customers.csv
           libraries:
-            - notebook: { path: notebooks/bronze.py }
-            - notebook: { path: notebooks/silver.py }
-            - notebook: { path: notebooks/gold.py }
+            - file:
+                path: ./notebooks/bronze.py
+            - file:
+                path: ./notebooks/silver.py
+            - file:
+                path: ./notebooks/gold.py
 
   prod:
     workspace:
@@ -93,6 +99,9 @@ targets:
           configuration:
             input_path: /Volumes/prod_catalog/prod_schema/data/Customers.csv
           libraries:
-            - notebook: { path: notebooks/bronze.py }
-            - notebook: { path: notebooks/silver.py }
-            - notebook: { path: notebooks/gold.py }
+            - file:
+                path: ./notebooks/bronze.py
+            - file:
+                path: ./notebooks/silver.py
+            - file:
+                path: ./notebooks/gold.py
