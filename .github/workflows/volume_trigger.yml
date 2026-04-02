@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '*/15 * * * *'    # checks every 15 minutes for new files
 
+permissions:
+  actions: write              # needed to trigger deploy.yml
+  contents: write             # needed to push .last_file_count
+
 env:
   DATABRICKS_HOST: https://dbc-ccb24871-81f0.cloud.databricks.com
   DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
@@ -14,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
@@ -21,13 +27,30 @@ jobs:
       - name: Check for new files in dev volume
         id: check_files
         run: |
-          # List files in dev volume and save count
-          FILE_COUNT=$(databricks fs ls \
-            dbfs:/Volumes/dev_catalog/dev_schema/data/ \
-            --output json | jq length)
+          # Use Python to list Unity Catalog Volume files
+          FILE_COUNT=$(python3 - << 'PYTHON'
+          import subprocess
+          import json
+
+          result = subprocess.run([
+              "databricks", "volumes", "list-files",
+              "dev_catalog", "dev_schema", "data"
+          ], capture_output=True, text=True)
+
+          if result.returncode != 0:
+              print("0")
+          else:
+              try:
+                  files = json.loads(result.stdout)
+                  print(len(files))
+              except:
+                  print("0")
+          PYTHON
+          )
+
           echo "file_count=$FILE_COUNT" >> $GITHUB_OUTPUT
 
-          # Read last known count from GitHub cache
+          # Read last known count
           LAST_COUNT=$(cat .last_file_count 2>/dev/null || echo "0")
           echo "last_count=$LAST_COUNT" >> $GITHUB_OUTPUT
 
@@ -48,12 +71,11 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .last_file_count
-          git commit -m "chore: update file count tracker" || true
+          git commit -m "chore: update file count tracker [skip ci]" || true
           git push || true
 
       - name: Trigger main pipeline if new files found
         if: steps.check_files.outputs.new_files == 'true'
-        run: |
-          gh workflow run deploy.yml
+        run: gh workflow run deploy.yml --ref main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

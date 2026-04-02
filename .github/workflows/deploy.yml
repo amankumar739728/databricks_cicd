@@ -108,6 +108,8 @@ name: Databricks CI/CD
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.last_file_count'    # ignore commits from volume_trigger.yml
   workflow_dispatch:
     inputs:
       reason:
@@ -145,52 +147,18 @@ jobs:
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          python3 - << 'PYTHON'
-          import subprocess
-          import json
-          import sys
-
-          def run_cmd(cmd):
-              result = subprocess.run(cmd, capture_output=True, text=True)
-              if result.returncode != 0:
-                  print(f"Warning: {result.stderr}")
-              return result.stdout
-
-          # List files in dev volume
-          output = run_cmd([
-              "databricks", "fs", "ls",
-              "dbfs:/Volumes/dev_catalog/dev_schema/data/",
-              "--output", "json"
-          ])
-
-          if not output.strip():
-              print("No files found in dev volume")
-              sys.exit(0)
-
-          files = json.loads(output)
-          print(f"Found {len(files)} files to sync")
-
-          targets = [
-              "dbfs:/Volumes/stg_catalog/stg_schema/data/",
-              "dbfs:/Volumes/prod_catalog/prod_schema/data/"
-          ]
-
-          for f in files:
-              filename = f["path"].split("/")[-1]
-              src = f"dbfs:/Volumes/dev_catalog/dev_schema/data/{filename}"
-
-              for target in targets:
-                  dest = f"{target}{filename}"
-                  print(f"Copying {filename} to {target}...")
-                  run_cmd([
-                      "databricks", "fs", "cp",
-                      src, dest,
-                      "--overwrite"
-                  ])
-                  print(f"✓ Synced {filename} to {target}")
-
-          print("Sync completed!")
-          PYTHON
+          databricks runs submit --wait \
+            --json '{
+              "run_name": "sync_volumes",
+              "tasks": [{
+                "task_key": "sync",
+                "notebook_task": {
+                  "notebook_path": "/Workspace/Users/aman.kumar@gyansys.com/databricks_cicd/notebooks/sync_volumes",
+                  "source": "WORKSPACE"
+                },
+                "existing_cluster_id": "'"$(databricks clusters list --output json | jq -r '.[0].cluster_id')"'"
+              }]
+            }'
 
       - name: Wait before next environment
         run: sleep 60
