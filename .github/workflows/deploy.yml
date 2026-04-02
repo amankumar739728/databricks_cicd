@@ -147,12 +147,11 @@ jobs:
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          # Get cluster id
           CLUSTER_ID=$(databricks clusters list --output json | jq -r '[.[] | select(.state=="RUNNING")] | .[0].cluster_id // empty')
 
           if [ -z "$CLUSTER_ID" ]; then
             echo "No running cluster found, using serverless..."
-            databricks jobs submit --wait \
+            databricks jobs submit \
               --json '{
                 "run_name": "sync_volumes",
                 "tasks": [{
@@ -167,7 +166,7 @@ jobs:
               }'
           else
             echo "Using cluster: $CLUSTER_ID"
-            databricks jobs submit --wait \
+            databricks jobs submit \
               --json "{
                 \"run_name\": \"sync_volumes\",
                 \"tasks\": [{
@@ -180,6 +179,7 @@ jobs:
                 }]
               }"
           fi
+          echo "Sync job submitted successfully!"
 
       - name: Wait before next environment
         run: sleep 60
