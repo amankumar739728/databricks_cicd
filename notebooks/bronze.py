@@ -12,7 +12,6 @@
 
 
 
-# Databricks notebook source
 import dlt
 import os
 
