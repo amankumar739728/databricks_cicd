@@ -131,15 +131,33 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Get OAuth Token
+        id: token
+        run: |
+          TOKEN=$(curl -s -X POST \
+            "https://dbc-ccb24871-81f0.cloud.databricks.com/oidc/v1/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=$DATABRICKS_CLIENT_ID&client_secret=$DATABRICKS_CLIENT_SECRET&scope=all-apis" \
+            | jq -r '.access_token')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "Token length: ${#TOKEN}"
+
       - name: Deploy to Dev
         run: databricks bundle deploy --target dev --force-lock
 
       - name: Stop any active dev pipeline run
         run: |
-          PIPELINE_ID=$(databricks pipelines list-pipelines --output json | \
-            jq -r '.[] | select(.name=="dlt_dev") | .pipeline_id')
+          PIPELINE_ID=$(curl -s \
+            "$DATABRICKS_HOST/api/2.0/pipelines" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            | jq -r '.statuses[] | select(.name=="dlt_dev") | .pipeline_id')
           echo "Pipeline ID: $PIPELINE_ID"
-          databricks pipelines stop $PIPELINE_ID || true
+          if [ -n "$PIPELINE_ID" ]; then
+            curl -s -X POST \
+              "$DATABRICKS_HOST/api/2.0/pipelines/$PIPELINE_ID/stop" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" || true
+            echo "Stop signal sent"
+          fi
 
       - name: Run DLT Pipeline in Dev
         run: databricks bundle run dlt_pipeline --target dev
@@ -147,17 +165,9 @@ jobs:
       - name: Sync data files from dev to stg and prod volumes
         continue-on-error: true
         run: |
-          TOKEN=$(curl -s -X POST \
-            "https://dbc-ccb24871-81f0.cloud.databricks.com/oidc/v1/token" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=client_credentials&client_id=$DATABRICKS_CLIENT_ID&client_secret=$DATABRICKS_CLIENT_SECRET&scope=all-apis" \
-            | jq -r '.access_token')
-
-          echo "Token obtained: ${#TOKEN} chars"
-
           RESPONSE=$(curl -s -X POST \
             "$DATABRICKS_HOST/api/2.1/jobs/runs/submit" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
             -H "Content-Type: application/json" \
             -d '{
               "run_name": "sync_volumes",
@@ -170,13 +180,12 @@ jobs:
               }],
               "serverless": true
             }')
-
           echo "Response: $RESPONSE"
           RUN_ID=$(echo $RESPONSE | jq -r '.run_id')
           echo "Sync job submitted with run_id: $RUN_ID"
 
       - name: Wait before next environment
-        run: sleep 60
+        run: sleep 120
 
   stg:
     needs: dev
@@ -187,21 +196,38 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Get OAuth Token
+        id: token
+        run: |
+          TOKEN=$(curl -s -X POST \
+            "https://dbc-ccb24871-81f0.cloud.databricks.com/oidc/v1/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=$DATABRICKS_CLIENT_ID&client_secret=$DATABRICKS_CLIENT_SECRET&scope=all-apis" \
+            | jq -r '.access_token')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
       - name: Deploy to Staging
         run: databricks bundle deploy --target stg --force-lock
 
       - name: Stop any active stg pipeline run
         run: |
-          PIPELINE_ID=$(databricks pipelines list-pipelines --output json | \
-            jq -r '.[] | select(.name=="dlt_stg") | .pipeline_id')
+          PIPELINE_ID=$(curl -s \
+            "$DATABRICKS_HOST/api/2.0/pipelines" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            | jq -r '.statuses[] | select(.name=="dlt_stg") | .pipeline_id')
           echo "Pipeline ID: $PIPELINE_ID"
-          databricks pipelines stop $PIPELINE_ID || true
+          if [ -n "$PIPELINE_ID" ]; then
+            curl -s -X POST \
+              "$DATABRICKS_HOST/api/2.0/pipelines/$PIPELINE_ID/stop" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" || true
+            echo "Stop signal sent"
+          fi
 
       - name: Run DLT Pipeline in Staging
         run: databricks bundle run dlt_pipeline --target stg
 
       - name: Wait before next environment
-        run: sleep 60
+        run: sleep 120
 
   prod:
     needs: stg
@@ -213,15 +239,32 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Get OAuth Token
+        id: token
+        run: |
+          TOKEN=$(curl -s -X POST \
+            "https://dbc-ccb24871-81f0.cloud.databricks.com/oidc/v1/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=$DATABRICKS_CLIENT_ID&client_secret=$DATABRICKS_CLIENT_SECRET&scope=all-apis" \
+            | jq -r '.access_token')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
       - name: Deploy to Production
         run: databricks bundle deploy --target prod --force-lock
 
       - name: Stop any active prod pipeline run
         run: |
-          PIPELINE_ID=$(databricks pipelines list-pipelines --output json | \
-            jq -r '.[] | select(.name=="dlt_prod") | .pipeline_id')
+          PIPELINE_ID=$(curl -s \
+            "$DATABRICKS_HOST/api/2.0/pipelines" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.token }}" \
+            | jq -r '.statuses[] | select(.name=="dlt_prod") | .pipeline_id')
           echo "Pipeline ID: $PIPELINE_ID"
-          databricks pipelines stop $PIPELINE_ID || true
+          if [ -n "$PIPELINE_ID" ]; then
+            curl -s -X POST \
+              "$DATABRICKS_HOST/api/2.0/pipelines/$PIPELINE_ID/stop" \
+              -H "Authorization: Bearer ${{ steps.token.outputs.token }}" || true
+            echo "Stop signal sent"
+          fi
 
       - name: Run DLT Pipeline in Production
         run: databricks bundle run dlt_pipeline --target prod
