@@ -22,28 +22,33 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Databricks CLI
-        uses: databricks/setup-cli@main
+      - name: Get OAuth Token
+        id: auth
+        run: |
+          TOKEN=$(curl -s -X POST \
+            "$DATABRICKS_HOST/oidc/v1/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=$DATABRICKS_CLIENT_ID&client_secret=$DATABRICKS_CLIENT_SECRET&scope=all-apis" \
+            | jq -r '.access_token')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
       - name: Check for new files in dev volume
         id: check_files
         run: |
-          # List files using Databricks CLI
-          echo "Attempting to list files from dev_catalog.dev_schema.data volume..."
+          # List files using Databricks REST API
+          echo "Attempting to list files from /Volumes/dev_catalog/dev_schema/data/ ..."
           
-          # Try the CLI command and capture output
-          if databricks volumes list-files dev_catalog dev_schema data > volume_output.txt 2>&1; then
-            echo "✓ CLI command succeeded"
-            cat volume_output.txt
-            
-            # Count files (excluding directories)
-            FILE_COUNT=$(cat volume_output.txt | jq -r '.files[]? | select(.is_dir == false) | .path' 2>/dev/null | wc -l || echo "0")
-          else
-            echo "✗ CLI command failed. Output:"
-            cat volume_output.txt
-            FILE_COUNT=0
-          fi
-
+          # Use the Files API to list volume contents
+          RESPONSE=$(curl -s -X GET \
+            "$DATABRICKS_HOST/api/2.0/fs/directories/Volumes/dev_catalog/dev_schema/data/" \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}")
+          
+          echo "API Response:"
+          echo "$RESPONSE"
+          
+          # Count files (exclude directories)
+          FILE_COUNT=$(echo "$RESPONSE" | jq '[.contents[]? | select(.is_directory == false)] | length' 2>/dev/null || echo "0")
+          
           echo "file_count=$FILE_COUNT" >> $GITHUB_OUTPUT
 
           # Read last known count
@@ -54,7 +59,7 @@ jobs:
 
           if [ "$FILE_COUNT" -gt "$LAST_COUNT" ]; then
             echo "new_files=true" >> $GITHUB_OUTPUT
-            echo "New files detected! Triggering pipeline..."
+            echo "✓ New files detected! Triggering pipeline..."
           else
             echo "new_files=false" >> $GITHUB_OUTPUT
             echo "No new files detected."
