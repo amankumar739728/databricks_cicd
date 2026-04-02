@@ -70,6 +70,15 @@ targets:
             - file:
                 path: ./notebooks/gold.py
 
+      jobs:
+        sync_job:
+          name: sync_volumes_dev
+          tasks:
+            - task_key: sync
+              notebook_task:
+                notebook_path: ./notebooks/sync_volumes.py
+                source: WORKSPACE
+
   stg:
     workspace:
       host: https://dbc-ccb24871-81f0.cloud.databricks.com
@@ -91,6 +100,15 @@ targets:
             - file:
                 path: ./notebooks/gold.py
 
+      jobs:
+        sync_job:
+          name: sync_volumes_stg
+          tasks:
+            - task_key: sync
+              notebook_task:
+                notebook_path: ./notebooks/sync_volumes.py
+                source: WORKSPACE
+
   prod:
     workspace:
       host: https://dbc-ccb24871-81f0.cloud.databricks.com
@@ -111,3 +129,12 @@ targets:
                 path: ./notebooks/silver.py
             - file:
                 path: ./notebooks/gold.py
+
+      jobs:
+        sync_job:
+          name: sync_volumes_prod
+          tasks:
+            - task_key: sync
+              notebook_task:
+                notebook_path: ./notebooks/sync_volumes.py
+                source: WORKSPACE
