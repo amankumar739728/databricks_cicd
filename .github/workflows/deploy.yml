@@ -145,14 +145,14 @@ jobs:
       - name: Sync data files from dev to stg and prod volumes
         run: |
           databricks fs cp \
-            dbfs:/Volumes/dev_catalog/dev_schema/data/ \
-            dbfs:/Volumes/stg_catalog/stg_schema/data/ \
-            --recursive --overwrite
+            "dbfs:/Volumes/dev_catalog/dev_schema/data/" \
+            "dbfs:/Volumes/stg_catalog/stg_schema/data/" \
+            --recursive --overwrite || true
 
           databricks fs cp \
-            dbfs:/Volumes/dev_catalog/dev_schema/data/ \
-            dbfs:/Volumes/prod_catalog/prod_schema/data/ \
-            --recursive --overwrite
+            "dbfs:/Volumes/dev_catalog/dev_schema/data/" \
+            "dbfs:/Volumes/prod_catalog/prod_schema/data/" \
+            --recursive --overwrite || true
 
       - name: Wait before next environment
         run: sleep 60
