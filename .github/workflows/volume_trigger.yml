@@ -2,7 +2,7 @@ name: Volume File Trigger
 
 on:
   schedule:
-    - cron: '*/15 * * * *'    # checks every 15 minutes for new files
+    - cron: '0 6 * * *'        # runs once daily at 11:30 AM IST (6:00 AM UTC)
   workflow_dispatch:          # allows manual triggering from GitHub UI
 
 permissions:
